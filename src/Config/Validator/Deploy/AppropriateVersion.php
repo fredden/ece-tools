@@ -81,6 +81,24 @@ class AppropriateVersion implements ValidatorInterface
             );
         }
 
+        if (!$this->magentoVersion->satisfies('>= 2.4.7')
+            && $this->configurationChecker->isConfigured(DeployInterface::VAR_USE_LUA, true)
+        ) {
+            $errors[] = sprintf(
+                '%s is available for Magento 2.4.7 and above',
+                DeployInterface::VAR_USE_LUA
+            );
+         }
+
+         if (!$this->magentoVersion->satisfies('>= 2.4.7')
+         && $this->configurationChecker->isConfigured(DeployInterface::VAR_LUA_KEY, true)
+        ) {
+            $errors[] = sprintf(
+                '%s is available for Magento 2.4.7 and above',
+                DeployInterface::VAR_LUA_KEY
+            );
+        }
+
         if ($errors) {
             return $this->resultFactory->error(
                 'The current configuration is not compatible with this version of Magento',

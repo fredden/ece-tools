@@ -16,6 +16,7 @@ use Magento\MagentoCloud\Step\StepException;
 use Magento\MagentoCloud\Step\StepInterface;
 use Psr\Log\LoggerInterface;
 use Magento\MagentoCloud\Package\MagentoVersion;
+use Magento\MagentoCloud\Config\Stage\DeployInterface;
 
 /**
  * Processes cache configuration.
@@ -50,24 +51,32 @@ class Cache implements StepInterface
     private $magentoVersion;
 
     /**
+     * @var DeployInterface
+     */
+    private $stageConfig;
+
+    /**
      * @param ConfigReader $configReader
      * @param ConfigWriter $configWriter
      * @param LoggerInterface $logger
      * @param CacheFactory $cacheConfig
      * @param MagentoVersion $magentoVersion
+     * @param DeployInterface $stageConfig
      */
     public function __construct(
         ConfigReader $configReader,
         ConfigWriter $configWriter,
         LoggerInterface $logger,
         CacheFactory $cacheConfig,
-        MagentoVersion $magentoVersion
+        MagentoVersion $magentoVersion,
+        DeployInterface $stageConfig
     ) {
         $this->configReader = $configReader;
         $this->configWriter = $configWriter;
         $this->logger = $logger;
         $this->cacheConfig = $cacheConfig;
         $this->magentoVersion = $magentoVersion;
+        $this->stageConfig = $stageConfig;
     }
 
     /**
@@ -79,6 +88,8 @@ class Cache implements StepInterface
             $config = $this->configReader->read();
             $cacheConfig = $this->cacheConfig->get();
             $graphqlConfig = $config['cache']['graphql'] ?? [];
+            $luaConfig = (boolean)$this->stageConfig->get(DeployInterface::VAR_USE_LUA);
+            $luaConfigKey = (boolean)$this->stageConfig->get(DeployInterface::VAR_LUA_KEY);
 
             if (isset($cacheConfig['frontend'])) {
                 $cacheConfig['frontend'] = array_filter($cacheConfig['frontend'], function ($cacheFrontend) {
@@ -120,6 +131,8 @@ class Cache implements StepInterface
                 $config['cache']['graphql'] = $graphqlConfig;
             }
 
+            $config['cache']['frontend']['default']['backend_options']['_useLua'] = $luaConfigKey;
+            $config['cache']['frontend']['default']['backend_options']['use_lua'] = $luaConfig;
             $this->configWriter->create($config);
         } catch (FileSystemException $e) {
             throw new StepException($e->getMessage(), Error::DEPLOY_ENV_PHP_IS_NOT_WRITABLE);
