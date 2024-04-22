@@ -67,6 +67,10 @@ class AppropriateVersionTest extends TestCase
             ->with('2.2')
             ->willReturn(true);
         $this->magentoVersion->expects($this->once())
+            ->method('isGreaterOrEqual')
+            ->with('2.4.7')
+            ->willReturn(true);
+        $this->magentoVersion->expects($this->once())
             ->method('satisfies')
             ->willReturn(true);
         $this->configurationCheckerMock->expects($this->never())
@@ -80,6 +84,10 @@ class AppropriateVersionTest extends TestCase
         $this->magentoVersion->expects($this->once())
             ->method('isGreaterOrEqual')
             ->with('2.2')
+            ->willReturn(false);
+        $this->magentoVersion->expects($this->once())
+            ->method('isGreaterOrEqual')
+            ->with('2.4.7')
             ->willReturn(false);
         $this->magentoVersion->expects($this->once())
             ->method('satisfies')
@@ -96,6 +104,10 @@ class AppropriateVersionTest extends TestCase
         $this->magentoVersion->expects($this->once())
             ->method('isGreaterOrEqual')
             ->with('2.2')
+            ->willReturn(false);
+        $this->magentoVersion->expects($this->once())
+            ->method('isGreaterOrEqual')
+            ->with('2.4.7')
             ->willReturn(false);
         $this->magentoVersion->expects($this->once())
             ->method('satisfies')

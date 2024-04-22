@@ -131,8 +131,13 @@ class Cache implements StepInterface
                 $config['cache']['graphql'] = $graphqlConfig;
             }
 
-            $config['cache']['frontend']['default']['backend_options']['_useLua'] = $luaConfigKey;
-            $config['cache']['frontend']['default']['backend_options']['use_lua'] = $luaConfig;
+            if (!empty($luaConfigKey)) {
+                $config['cache']['frontend']['default']['backend_options']['_useLua'] = $luaConfigKey;
+            }
+
+            if (!empty($luaConfig)) {
+                $config['cache']['frontend']['default']['backend_options']['use_lua'] = $luaConfig;
+            }
             $this->configWriter->create($config);
         } catch (FileSystemException $e) {
             throw new StepException($e->getMessage(), Error::DEPLOY_ENV_PHP_IS_NOT_WRITABLE);

@@ -81,7 +81,7 @@ class AppropriateVersion implements ValidatorInterface
             );
         }
 
-         if (!$this->magentoVersion->satisfies('>= 2.4.7')) {
+         if (!$this->magentoVersion->isGreaterOrEqual('2.4.7')) {
             $variables = [
                 DeployInterface::VAR_USE_LUA,
                 DeployInterface::VAR_LUA_KEY,
