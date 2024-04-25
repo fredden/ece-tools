@@ -123,7 +123,7 @@ class Cache implements StepInterface
                 );
                 unset($config['cache']);
             } else {
-                if(isset($cacheConfig['frontend']['default'])) {
+                if (isset($cacheConfig['frontend']['default'])) {
                     $cacheConfig['frontend']['default']['backend_options']['_useLua'] = $luaConfigKey;
                     $cacheConfig['frontend']['default']['backend_options']['use_lua'] = $luaConfig;
                 }

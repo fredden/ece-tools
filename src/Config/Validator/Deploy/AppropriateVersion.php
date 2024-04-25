@@ -50,6 +50,8 @@ class AppropriateVersion implements ValidatorInterface
 
     /**
      * @return Validator\ResultInterface
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function validate(): Validator\ResultInterface
     {
@@ -81,7 +83,7 @@ class AppropriateVersion implements ValidatorInterface
             );
         }
 
-         if (!$this->magentoVersion->isGreaterOrEqual('2.4.7')) {
+        if (!$this->magentoVersion->isGreaterOrEqual('2.4.7')) {
             $variables = [
                 DeployInterface::VAR_USE_LUA,
                 DeployInterface::VAR_LUA_KEY,
