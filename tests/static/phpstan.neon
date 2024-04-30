@@ -17,8 +17,6 @@ parameters:
           paths:
             - ../../src/Command/BackupRestore.php
             - ../../src/Command/DbDump.php
-        - message: '#Access to private constant#'
-          path: ../../src/App/Logger/Gelf/TransportFactory.php
         - message: '#Property Magento\\MagentoCloud\\App\\Logger\\LineFormatterFactory\:\:\$container is never read, only written\.#'
           path: ../../src/App/Logger/LineFormatterFactory.php
         - message: '#Property Magento\\MagentoCloud\\Command\\ConfigShow\:\:\$logger is never read, only written\.#'
