@@ -57,9 +57,9 @@ variables:
           build:
             SCD_COMPRESSION_TIMEOUT: 900
   SCD_STRATEGY:
-    description: Customize the deployment strategy for static content. The value "standard" will deploy all static view
-      files for all packages, "quick" will minimize deployment time, and "compact" will conserve space on the server.
-      Compact is not compatible with multi-threaded deployment and will set the value of `SCD_THREADS` to 1. The default
+    description: Customize the deployment strategy for static content. The value "standard" deploys all static view
+      files for all packages, "quick" minimizes deployment time, and "compact" conserves space on the server.
+      Compact is not compatible with multi-threaded deployment and sets the value of `SCD_THREADS` to 1. The default
       value is "quick".
     type: string
     magento_version: '>=2.2.0'
@@ -218,7 +218,7 @@ variables:
   MIN_LOGGING_LEVEL:
     description: Use to override the minimum logging level for all output streams without making changes to the code.
       This helps to improve troubleshooting problems with deployment. For example, if your deployment fails,
-      you can use this variable to increase the logging granularity globally. Doesn't affect log level for the file output.
+      you can use this variable to increase the logging granularity globally. Does not affect log level for the file output.
       See Set up notifications—Log levels.
     type: string
     allowed:
@@ -466,7 +466,28 @@ variables:
                   backend: file
                 page_cache:
                   backend: file
-
+  USE_LUA:
+    description: "Enable/Disable LUA in environments starting from Magento 2.4.7"
+    type: boolean
+    stages:
+      - deploy
+    default:
+      deploy: false
+    examples:
+      - stage:
+          deploy:
+            USE_LUA: true
+  LUA_KEY:
+    description: "LUA KEY for environments starting from Magento 2.4.7"
+    type: boolean
+    stages:
+      - deploy
+    default:
+      deploy: true
+    examples:
+      - stage:
+          deploy:
+            LUA_KEY: false
   SESSION_CONFIGURATION:
     description: "Replace or modify the Magento session configuration generated during the deployment process.
       By default, ece-tools configures Magento to store Redis session data. To replace the existing configuration,
@@ -561,7 +582,9 @@ variables:
                      process before terminating. Although we do not recommend it, you can use 0
                      to prevent the consumer from terminating.\n\n
       consumers — an array of strings specifying which consumer(s) to run.
-                  An empty array runs all consumers."
+                  An empty array runs all consumers.\n\n
+      multiple_processes - a number specifying the number of processes to spawn for each consumer.
+                           Supported in Magento 2.4.4 or greater."
     type: array
     stages:
       - deploy
@@ -576,6 +599,9 @@ variables:
               consumers:
                 - consumer1
                 - consumer2
+              multiple_processes:
+                consumer1: 4
+                consumer2: 3
   CONSUMERS_WAIT_FOR_MAX_MESSAGES:
     description: Use this variable to configure how consumers process messages. If this value is true, a consumer waits
       to process the number of messages (max_messages) from the message queue specified in the CRONS_CONSUMERS_RUNNER
@@ -701,6 +727,28 @@ variables:
               config:
                 region: us-east-1
                 bucket: test-bucket
+  ENABLE_EVENTING:
+    description: Enables commerce eventing.
+    type: boolean
+    stages:
+      - global
+    default:
+      global: false
+    examples:
+      - stage:
+          global:
+            ENABLE_EVENTING: true
+  ENABLE_WEBHOOKS:
+    description: Enables Commerce webhooks.
+    type: boolean
+    stages:
+      - global
+    default:
+      global: false
+    examples:
+      - stage:
+          global:
+            ENABLE_WEBHOOKS: true
 
   # Environment variables
   ENV_RELATIONSHIPS:

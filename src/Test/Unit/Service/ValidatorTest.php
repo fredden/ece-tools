@@ -33,7 +33,7 @@ class ValidatorTest extends TestCase
     /**
      * @inheritdoc
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->magentoVersionMock = $this->createMock(MagentoVersion::class);
 
@@ -147,14 +147,14 @@ class ValidatorTest extends TestCase
                 '2.5.0',
                 [
                     ServiceInterface::NAME_PHP => '7.2.13', // wrong
-                    ServiceInterface::NAME_DB_MARIA => '10.2.1',
+                    ServiceInterface::NAME_DB_MARIA => '10.6.1',
                     ServiceInterface::NAME_NGINX => '1.9',
-                    ServiceInterface::NAME_VARNISH => '5.5',
+                    ServiceInterface::NAME_VARNISH => '7.1.1',
                     ServiceInterface::NAME_REDIS => 'latest',
                     ServiceInterface::NAME_ELASTICSEARCH => '6.7', // wrong
-                    ServiceInterface::NAME_RABBITMQ => '3.7'
+                    ServiceInterface::NAME_RABBITMQ => '3.7' // wrong
                 ],
-                2
+                3
             ],
             [
                 '2.4.0',
@@ -205,7 +205,7 @@ class ValidatorTest extends TestCase
             [
                 '2.4.1',
                 [
-                    ServiceInterface::NAME_DB_MYSQL => '5.7',
+                    ServiceInterface::NAME_DB_MYSQL => '8.0.2',
                 ],
                 0
             ],
@@ -279,6 +279,267 @@ class ValidatorTest extends TestCase
                     ServiceInterface::NAME_RABBITMQ => '3.5' //wrong
                 ],
                 4
+            ],
+            [
+                '2.3.7',
+                [
+                    ServiceInterface::NAME_OPENSEARCH => '1.1' //wrong
+                ],
+                1
+            ],
+            [
+                '2.3.7-p2',
+                [
+                    ServiceInterface::NAME_OPENSEARCH => '1.2' //wrong
+                ],
+                1
+            ],
+            [
+                '2.3.7-p3',
+                [
+                    ServiceInterface::NAME_OPENSEARCH => '1.1'
+                ],
+                0
+            ],
+            [
+                '2.3.7-p4',
+                [
+                    ServiceInterface::NAME_PHP => '7.4.0',
+                    ServiceInterface::NAME_DB_MARIA => '10.3.35',
+                    ServiceInterface::NAME_NGINX => '1.18.0',
+                    ServiceInterface::NAME_VARNISH => '6.5.1',
+                    ServiceInterface::NAME_REDIS => '6.0.12',
+                    ServiceInterface::NAME_OPENSEARCH => '1.2',
+                    ServiceInterface::NAME_RABBITMQ => '3.9.0'
+                ],
+                0
+            ],
+            [
+                '2.3.7-p3',
+                [
+                    ServiceInterface::NAME_OPENSEARCH => '1.2.2'
+                ],
+                0
+            ],
+            [
+                '2.4.0',
+                [
+                    ServiceInterface::NAME_OPENSEARCH => '1.2' //wrong
+                ],
+                1
+            ],
+            [
+                '2.4.3-p2',
+                [
+                    ServiceInterface::NAME_OPENSEARCH => '1.2'
+                ],
+                0
+            ],
+            [
+                '2.4.3',
+                [
+                    ServiceInterface::NAME_OPENSEARCH => '1.2.2' //wrong
+                ],
+                1
+            ],
+            [
+                '2.4.4',
+                [
+                    ServiceInterface::NAME_OPENSEARCH => '1.2.2',
+                    ServiceInterface::NAME_REDIS => '6.2',
+                    ServiceInterface::NAME_REDIS_SESSION => '6.2',
+                    ServiceInterface::NAME_RABBITMQ => '3.9'
+                ],
+                0
+            ],
+            [
+                '2.3.7-p2',
+                [
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.10' //wrong
+                ],
+                1
+            ],
+            [
+                '2.3.7-p3',
+                [
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.10'
+                ],
+                0
+            ],
+            [
+                '2.4.0',
+                [
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.10' //wrong
+                ],
+                1
+            ],
+            [
+                '2.4.1',
+                [
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.10' //wrong
+                ],
+                1
+            ],
+            [
+                '2.4.2',
+                [
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.10' //wrong
+                ],
+                1
+            ],
+            [
+                '2.4.3',
+                [
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.10'
+                ],
+                0
+            ],
+            [
+                '2.4.4',
+                [
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.10'
+                ],
+                0
+            ],
+            [
+                '2.4.3-p3',
+                [
+                    ServiceInterface::NAME_PHP => '7.4.0',
+                    ServiceInterface::NAME_DB_MARIA => '10.4.14',
+                    ServiceInterface::NAME_NGINX => '1.18.0',
+                    ServiceInterface::NAME_VARNISH => '6.5.1',
+                    ServiceInterface::NAME_REDIS => '6.0.12',
+                    ServiceInterface::NAME_OPENSEARCH => '1.2',
+                    ServiceInterface::NAME_RABBITMQ => '3.8.0'
+                ],
+                0
+            ],
+            [
+                '2.4.3-p3',
+                [
+                    ServiceInterface::NAME_RABBITMQ => '3.9.0'
+                ],
+                0
+            ],
+            [
+                '2.4.4-p1',
+                [
+                    ServiceInterface::NAME_PHP => '8.1.0',
+                    ServiceInterface::NAME_DB_MARIA => '10.4.22',
+                    ServiceInterface::NAME_NGINX => '1.18.0',
+                    ServiceInterface::NAME_VARNISH => '7.0.0',
+                    ServiceInterface::NAME_REDIS => '6.2.6',
+                    ServiceInterface::NAME_OPENSEARCH => '1.2',
+                    ServiceInterface::NAME_RABBITMQ => '3.9.0'
+                ],
+                0
+            ],
+            [
+                '2.4.5',
+                [
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.10'
+                ],
+                0
+            ],
+            [
+                '2.4.5',
+                [
+                    ServiceInterface::NAME_PHP => '8.0.0', //wrong
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.11.0', //wrong
+                    ServiceInterface::NAME_DB_MARIA => '10.5.0', //wrong
+                    ServiceInterface::NAME_VARNISH => '7.1.0', //wrong
+                    ServiceInterface::NAME_REDIS => '6.1.3', //wrong
+                    ServiceInterface::NAME_OPENSEARCH => '1.0.0', //wrong
+                    ServiceInterface::NAME_RABBITMQ => '3.8.1' //wrong
+                ],
+                6
+            ],
+            [
+                '2.4.5',
+                [
+                    ServiceInterface::NAME_PHP => '8.1.0',
+                    ServiceInterface::NAME_DB_MARIA => '10.4.22',
+                    ServiceInterface::NAME_NGINX => '1.18.0',
+                    ServiceInterface::NAME_VARNISH => '7.0.0',
+                    ServiceInterface::NAME_REDIS => '6.2.6',
+                    ServiceInterface::NAME_OPENSEARCH => '1.2',
+                    ServiceInterface::NAME_RABBITMQ => '3.9.0'
+                ],
+                0
+            ],
+            [
+                '2.4.6',
+                [
+                    ServiceInterface::NAME_ELASTICSEARCH => '7.11' //wrong
+                ],
+                1
+            ],
+            [
+                '2.4.6',
+                [
+                    ServiceInterface::NAME_PHP => '8.2.0',
+                    ServiceInterface::NAME_DB_MARIA => '10.6.0',
+                    ServiceInterface::NAME_VARNISH => '7.1.1',
+                    ServiceInterface::NAME_REDIS => '7.0.0',
+                    ServiceInterface::NAME_OPENSEARCH => '2.3.0',
+                    ServiceInterface::NAME_RABBITMQ => '3.9.0'
+                ],
+                0
+            ],
+            [
+                '2.4.6',
+                [
+                    ServiceInterface::NAME_PHP => '8.2.0',
+                    ServiceInterface::NAME_DB_MARIA => '10.6.0',
+                    ServiceInterface::NAME_VARNISH => '7.1.1',
+                    ServiceInterface::NAME_REDIS => '7.0.0',
+                    ServiceInterface::NAME_OPENSEARCH => '2.3.0',
+                    ServiceInterface::NAME_RABBITMQ => '3.11.0'
+                ],
+                0
+            ],
+            [
+                '2.4.6',
+                [
+                    ServiceInterface::NAME_PHP => '8.2.0',
+                    ServiceInterface::NAME_DB_MARIA => '10.6.0',
+                    ServiceInterface::NAME_VARNISH => '7.1.1',
+                    ServiceInterface::NAME_REDIS => '7.0.0',
+                    ServiceInterface::NAME_OPENSEARCH => '2.3.0',
+                    ServiceInterface::NAME_RABBITMQ => '3.8.0' // wrong
+                ],
+                1
+            ],
+            [
+                '2.4.7',
+                [
+                    ServiceInterface::NAME_PHP => '8.2.0',
+                    ServiceInterface::NAME_DB_MARIA => '10.6.0',
+                    ServiceInterface::NAME_VARNISH => '7.1.1',
+                    ServiceInterface::NAME_REDIS => '7.2.0',
+                    ServiceInterface::NAME_OPENSEARCH => '2.3.0',
+                    ServiceInterface::NAME_RABBITMQ => '3.9.0' // wrong
+                ],
+                1
+            ],
+            [
+                '2.4.7',
+                [
+                    ServiceInterface::NAME_PHP => '8.2.0',
+                    ServiceInterface::NAME_DB_MARIA => '10.6.0',
+                    ServiceInterface::NAME_VARNISH => '7.1.1',
+                    ServiceInterface::NAME_REDIS => '7.2.0',
+                    ServiceInterface::NAME_OPENSEARCH => '2.3.0',
+                    ServiceInterface::NAME_RABBITMQ => '3.12.0'
+                ],
+                0
+            ],
+            [
+                '2.4.7',
+                [
+                    ServiceInterface::NAME_RABBITMQ => '3.13.0'
+                ],
+                0
             ],
         ];
     }

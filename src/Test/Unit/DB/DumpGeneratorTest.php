@@ -69,7 +69,7 @@ class DumpGeneratorTest extends TestCase
     /**
      * Setup the test environment.
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->dumpMock = $this->getMockForAbstractClass(DumpInterface::class);
         $this->loggerMock = $this->getMockForAbstractClass(LoggerInterface::class);
@@ -97,7 +97,7 @@ class DumpGeneratorTest extends TestCase
         );
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         if (file_exists($this->tmpDir . '/dbdump.lock')) {
             unlink($this->tmpDir . '/dbdump.lock');
@@ -132,7 +132,7 @@ class DumpGeneratorTest extends TestCase
                 $dumpFilePath,
                 $removeDefiners
             ));
-        $this->dumpGenerator->create('main', $this->connectionDataMock, $removeDefiners);
+        $this->dumpGenerator->create('main', $this->connectionDataMock, $removeDefiners, '');
     }
 
     /**
@@ -173,7 +173,7 @@ class DumpGeneratorTest extends TestCase
             ))
             ->willThrowException($exception);
         $this->expectExceptionObject($exception);
-        $this->dumpGenerator->create('main', $this->connectionDataMock, false);
+        $this->dumpGenerator->create('main', $this->connectionDataMock, false, '');
     }
 
     public function testFailedCreationLockFile()
@@ -190,7 +190,7 @@ class DumpGeneratorTest extends TestCase
             ->with('Could not get the lock file!');
         $this->shellMock->expects($this->never())
             ->method('execute');
-        $this->dumpGenerator->create('main', $this->connectionDataMock, false);
+        $this->dumpGenerator->create('main', $this->connectionDataMock, false, '');
     }
 
     public function testLockedFile()
@@ -207,7 +207,7 @@ class DumpGeneratorTest extends TestCase
             );
         $this->shellMock->expects($this->never())
             ->method('execute');
-        $this->dumpGenerator->create('main', $this->connectionDataMock, false);
+        $this->dumpGenerator->create('main', $this->connectionDataMock, false, '');
     }
 
     private function getDumpFilePath(string $type): string

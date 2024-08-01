@@ -19,6 +19,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Magento\MagentoCloud\Package\MagentoVersion;
+use Magento\MagentoCloud\Config\Stage\DeployInterface;
 
 /**
  * @inheritdoc
@@ -73,22 +74,29 @@ class CacheTest extends TestCase
     private $magentoVersion;
 
     /**
+     * @var DeployInterface
+     */
+    private $stageConfig;
+
+    /**
      * @inheritdoc
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->loggerMock = $this->getMockForAbstractClass(LoggerInterface::class);
         $this->configWriterMock = $this->createMock(ConfigWriter::class);
         $this->configReaderMock = $this->createMock(ConfigReader::class);
         $this->cacheConfigMock = $this->createMock(CacheFactory::class);
         $this->magentoVersion = $this->createMock(MagentoVersion::class);
+        $this->stageConfig = $this->createMock(DeployInterface::class);
 
         $this->step = new Cache(
             $this->configReaderMock,
             $this->configWriterMock,
             $this->loggerMock,
             $this->cacheConfigMock,
-            $this->magentoVersion
+            $this->magentoVersion,
+            $this->stageConfig
         );
 
         $this->socketCreateMock = $this->getFunctionMock(
@@ -106,28 +114,36 @@ class CacheTest extends TestCase
     }
 
     /**
+     * @param array $configFromFile
      * @param array $config
+     * @param array $finalConfig
      * @param bool $isGreaterOrEqual
      * @param string $address
      * @param int $port
      * @throws StepException
      * @dataProvider executeDataProvider
      */
-    public function testExecute(array $config, bool $isGreaterOrEqual, $address, $port)
-    {
+    public function testExecute(
+        array $configFromFile,
+        array $config,
+        array $finalConfig,
+        bool $isGreaterOrEqual,
+        $address,
+        $port
+    ) {
         $this->magentoVersion->expects($this->any())
             ->method('isGreaterOrEqual')
             ->with('2.3.0')
             ->willReturn($isGreaterOrEqual);
         $this->configReaderMock->expects($this->once())
             ->method('read')
-            ->willReturn([]);
+            ->willReturn($configFromFile);
         $this->cacheConfigMock->expects($this->once())
             ->method('get')
             ->willReturn($config);
         $this->configWriterMock->expects($this->once())
             ->method('create')
-            ->with(['cache' => $config]);
+            ->with($finalConfig);
         $this->loggerMock->expects($this->once())
             ->method('info')
             ->with('Updating cache configuration.');
@@ -145,10 +161,18 @@ class CacheTest extends TestCase
         $this->step->execute();
     }
 
+    /**
+     * @return array[]
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
     public function executeDataProvider(): array
     {
         return [
-            'backend model without remote_backend_options' => [
+            'with qraphql config in file' => [
+                'configFromFile' => [
+                    'cache' => ['graphql' => ['id_salt' => 'some salt']],
+                ],
                 'config' => [
                     'frontend' => [
                         'frontName' => [
@@ -160,11 +184,58 @@ class CacheTest extends TestCase
                         ],
                     ],
                 ],
+                'finalConfig' => [
+                    'cache' => [
+                        'frontend' => [
+                            'frontName' => [
+                                'backend' => CacheFactory::REDIS_BACKEND_CM_CACHE,
+                                'backend_options' => [
+                                    'server' => 'localhost',
+                                    'port' => 6370,
+                                ],
+                            ],
+                        ],
+                        'graphql' => [
+                            'id_salt' => 'some salt',
+                        ],
+                    ],
+                ],
+                'isGreaterOrEqual' => false,
+                'address' => 'localhost',
+                'port' => 6370
+            ],
+            'backend model without remote_backend_options' => [
+                'configFromFile' => [],
+                'config' => [
+                    'frontend' => [
+                        'frontName' => [
+                            'backend' => CacheFactory::REDIS_BACKEND_CM_CACHE,
+                            'backend_options' => [
+                                'server' => 'localhost',
+                                'port' => 6370,
+                            ],
+                        ],
+                    ],
+                ],
+                'finalConfig' => [
+                    'cache' => [
+                        'frontend' => [
+                            'frontName' => [
+                                'backend' => CacheFactory::REDIS_BACKEND_CM_CACHE,
+                                'backend_options' => [
+                                    'server' => 'localhost',
+                                    'port' => 6370,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
                 'isGreaterOrEqual' => false,
                 'address' => 'localhost',
                 'port' => 6370
             ],
             'backend model with remote_backend_options' => [
+                'configFromFile' => [],
                 'config' => [
                     'frontend' => [
                         'frontName' => [
@@ -178,11 +249,27 @@ class CacheTest extends TestCase
                         ],
                     ],
                 ],
+                'finalConfig' => [
+                    'cache' => [
+                        'frontend' => [
+                            'frontName' => [
+                                'backend' => CacheFactory::REDIS_BACKEND_REMOTE_SYNCHRONIZED_CACHE,
+                                'backend_options' => [
+                                    'remote_backend_options' => [
+                                        'server' => 'localhost',
+                                        'port' => 6370,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
                 'isGreaterOrEqual' => true,
                 'address' => 'localhost',
                 'port' => 6370
             ],
             'Server contains port data' => [
+                'configFromFile' => [],
                 'config' => [
                     'frontend' => [
                         'frontName' => [
@@ -195,11 +282,26 @@ class CacheTest extends TestCase
                         ],
                     ],
                 ],
+                'finalConfig' => [
+                    'cache' => [
+                        'frontend' => [
+                            'frontName' => [
+                                'backend' => CacheFactory::REDIS_BACKEND_REMOTE_SYNCHRONIZED_CACHE,
+                                'backend_options' => [
+                                    'remote_backend_options' => [
+                                        'server' => '127.0.0.1:6371',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
                 'isGreaterOrEqual' => true,
                 'address' => '127.0.0.1',
                 'port' => 6371
             ],
             'Server contains protocol and port data' => [
+                'configFromFile' => [],
                 'config' => [
                     'frontend' => [
                         'frontName' => [
@@ -212,26 +314,76 @@ class CacheTest extends TestCase
                         ],
                     ],
                 ],
+                'finalConfig' => [
+                    'cache' => [
+                        'frontend' => [
+                            'frontName' => [
+                                'backend' => CacheFactory::REDIS_BACKEND_REMOTE_SYNCHRONIZED_CACHE,
+                                'backend_options' => [
+                                    'remote_backend_options' => [
+                                        'server' => 'tcp://localhost:6379',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
                 'isGreaterOrEqual' => true,
                 'address' => 'localhost',
                 'port' => 6379
             ],
+            'Custom redis model' => [
+                'configFromFile' => [],
+                'config' => [
+                    'frontend' => [
+                        'frontName' => [
+                            'backend' => 'SomeCustomRedisModel',
+                            '_custom_redis_backend' => true,
+                            'backend_options' => [
+                                'server' => 'localhost',
+                                'port' => 6370,
+                            ],
+                        ],
+                    ],
+                ],
+                'finalConfig' => [
+                    'cache' => [
+                        'frontend' => [
+                            'frontName' => [
+                                'backend' => 'SomeCustomRedisModel',
+                                'backend_options' => [
+                                    'server' => 'localhost',
+                                    'port' => 6370,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'isGreaterOrEqual' => true,
+                'address' => 'localhost',
+                'port' => 6370
+            ],
         ];
     }
 
-    public function testExecuteEmptyConfig()
+    /**
+     * @param array $cacheConfig
+     * @param array $finalConfig
+     * @return void
+     * @throws StepException
+     * @dataProvider executeEmptyConfig
+     */
+    public function testExecuteEmptyConfig(array $cacheConfig, array $finalConfig): void
     {
         $this->configReaderMock->expects($this->once())
             ->method('read')
-            ->willReturn(['cache' => [
-                'frontend' => ['frontName' => ['backend' => 'cacheDriver']],
-            ]]);
+            ->willReturn($cacheConfig);
         $this->cacheConfigMock->expects($this->once())
             ->method('get')
             ->willReturn([]);
         $this->configWriterMock->expects($this->once())
             ->method('create')
-            ->with([]);
+            ->with($finalConfig);
         $this->loggerMock->expects($this->once())
             ->method('info')
             ->with('Cache configuration was not found. Removing cache configuration.');
@@ -241,6 +393,33 @@ class CacheTest extends TestCase
         $this->socketCloseMock->expects($this->never());
 
         $this->step->execute();
+    }
+
+    public function executeEmptyConfig(): array
+    {
+        return [
+            'without graphql in config' => [
+                'cacheConfig' => [
+                    'cache' => [
+                        'frontend' => ['frontName' => ['backend' => 'cacheDriver']],
+                    ],
+                ],
+                'finalConfig' => [],
+            ],
+            'with graphql in config' => [
+                'cacheConfig' => [
+                    'cache' => [
+                        'frontend' => ['frontName' => ['backend' => 'cacheDriver']],
+                        'graphql' => ['id_salt' => 'some salt'],
+                    ],
+                ],
+                'finalConfig' => [
+                    'cache' => [
+                        'graphql' => ['id_salt' => 'some salt'],
+                    ],
+                ],
+            ],
+        ];
     }
 
     public function testExecuteRedisService()

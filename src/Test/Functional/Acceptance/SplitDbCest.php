@@ -15,7 +15,7 @@ use Exception;
 /**
  * Checks split database functionality
  *
- * @group php74
+ * @group php83
  */
 class SplitDbCest extends AbstractCest
 {
@@ -71,6 +71,9 @@ class SplitDbCest extends AbstractCest
         $I->writeServicesYaml($services);
         $I->writeAppMagentoYaml($magentoApp);
 
+        // Restore app/etc after build phase
+        $I->runDockerComposeCommand('run build bash -c "cp -r /app/init/app/etc /app/app"');
+
         // Deploy 'Split Db' in an environment with prepared architecture. Case with upgrade
         $I->generateDockerCompose('--mode=production');
         foreach ($this->variationsDataPartWithSplitDbArch() as $variationData) {
@@ -104,7 +107,7 @@ class SplitDbCest extends AbstractCest
     protected function dataProviderMagentoCloudVersions(): array
     {
         return [
-            ['version' => '2.4.1'],
+            ['version' => '2.4.7-beta-test'],
         ];
     }
 

@@ -18,15 +18,18 @@ use Magento\MagentoCloud\Config\SearchEngine\ElasticSuite;
 use Magento\MagentoCloud\Package\MagentoVersion;
 use Magento\MagentoCloud\Package\UndefinedPackageException;
 use Magento\MagentoCloud\Service\ElasticSearch;
+use Magento\MagentoCloud\Service\OpenSearch;
 use Magento\MagentoCloud\Service\ServiceException;
 use Magento\MagentoCloud\Util\UrlManager;
 use Magento\MagentoCloud\Util\PasswordGenerator;
 use Magento\MagentoCloud\Config\RemoteStorage;
+use Magento\MagentoCloud\Config\Amqp as AmqpConfig;
 
 /**
  * Generates command for magento installation
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class InstallCommandFactory
 {
@@ -80,9 +83,19 @@ class InstallCommandFactory
     private $elasticSearch;
 
     /**
+     * @var OpenSearch
+     */
+    private $openSearch;
+
+    /**
      * @var RemoteStorage
      */
     private $remoteStorage;
+
+    /**
+     * @var AmqpConfig
+     */
+    private $amqpConfig;
 
     /**
      * @param UrlManager $urlManager
@@ -94,7 +107,9 @@ class InstallCommandFactory
      * @param DbConfig $dbConfig
      * @param MagentoVersion $magentoVersion
      * @param ElasticSearch $elasticSearch
+     * @param OpenSearch $openSearch
      * @param RemoteStorage $remoteStorage
+     * @param AmqpConfig $amqpConfig
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
@@ -108,7 +123,9 @@ class InstallCommandFactory
         DbConfig $dbConfig,
         MagentoVersion $magentoVersion,
         ElasticSearch $elasticSearch,
-        RemoteStorage $remoteStorage
+        OpenSearch $openSearch,
+        RemoteStorage $remoteStorage,
+        AmqpConfig $amqpConfig
     ) {
         $this->urlManager = $urlManager;
         $this->adminData = $adminData;
@@ -119,7 +136,9 @@ class InstallCommandFactory
         $this->dbConfig = $dbConfig;
         $this->magentoVersion = $magentoVersion;
         $this->elasticSearch = $elasticSearch;
+        $this->openSearch = $openSearch;
         $this->remoteStorage = $remoteStorage;
+        $this->amqpConfig = $amqpConfig;
     }
 
     /**
@@ -139,7 +158,8 @@ class InstallCommandFactory
                 $this->getBaseOptions(),
                 $this->getAdminOptions(),
                 $this->getEsOptions(),
-                $this->getRemoteStorageOptions()
+                $this->getRemoteStorageOptions(),
+                $this->getAmqpOptions()
             );
         } catch (GenericException $exception) {
             throw new ConfigException($exception->getMessage(), $exception->getCode(), $exception);
@@ -224,29 +244,53 @@ class InstallCommandFactory
      * @throws UndefinedPackageException
      * @throws ConfigException
      * @throws ServiceException
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function getEsOptions(): array
     {
         $options = [];
 
         if ($this->magentoVersion->isGreaterOrEqual('2.4.0')) {
-            if (!$this->elasticSearch->isInstalled()) {
-                throw new ConfigException('Elasticsearch service is required');
+            if (!$this->elasticSearch->isInstalled() && !$this->openSearch->isInstalled()) {
+                throw new ConfigException(
+                    'Elasticsearch service is required! If you use Magento 2.4.4 or higher you can use OpenSearch'
+                );
             }
 
-            $options['--search-engine'] = $this->elasticSearch->getFullVersion();
-            $options['--elasticsearch-host'] = $this->elasticSearch->getHost();
-            $options['--elasticsearch-port'] = $this->elasticSearch->getPort();
+            $enginePrefixName = 'elasticsearch';
 
-            $esConfig = $this->elasticSearch->getConfiguration();
-            if ($this->elasticSearch->isAuthEnabled()) {
-                $options['--elasticsearch-enable-auth'] = '1';
-                $options['--elasticsearch-username'] = $esConfig['username'];
-                $options['--elasticsearch-password'] = $esConfig['password'];
+            if ($this->openSearch->isInstalled()
+                && $this->magentoVersion->satisfies('>=2.3.7-p3 <2.4.0 || >=2.4.3-p2')
+            ) {
+                $engine = $this->openSearch->getFullEngineName();
+                $host = $this->openSearch->getHost();
+                $port = $this->openSearch->getPort();
+                $configuration = $this->openSearch->getConfiguration();
+                $isAuthEnabled = $this->openSearch->isAuthEnabled();
+
+                if ($this->magentoVersion->isGreaterOrEqual('2.4.6')) {
+                    $enginePrefixName = 'opensearch';
+                }
+            } else {
+                $engine = $this->elasticSearch->getFullEngineName();
+                $host = $this->elasticSearch->getHost();
+                $port = $this->elasticSearch->getPort();
+                $configuration = $this->elasticSearch->getConfiguration();
+                $isAuthEnabled = $this->elasticSearch->isAuthEnabled();
             }
 
-            if (isset($esConfig['query']['index'])) {
-                $options['--elasticsearch-index-prefix'] = $esConfig['query']['index'];
+            $options['--search-engine'] = $engine;
+                $options['--' . $enginePrefixName . '-host'] = $host;
+            $options['--' . $enginePrefixName . '-port'] = $port;
+
+            if ($isAuthEnabled) {
+                $options['--' . $enginePrefixName . '-enable-auth'] = '1';
+                $options['--' . $enginePrefixName . '-username'] = $configuration['username'];
+                $options['--' . $enginePrefixName . '-password'] = $configuration['password'];
+            }
+
+            if (isset($configuration['query']['index'])) {
+                $options['--' . $enginePrefixName . '-index-prefix'] = $configuration['query']['index'];
             }
         }
 
@@ -306,5 +350,28 @@ class InstallCommandFactory
         }
 
         return $this->connectionData;
+    }
+
+    /**
+     * Returns AMQP optional config options.
+     *
+     * @return array
+     * @throws UndefinedPackageException
+     */
+    private function getAmqpOptions(): array
+    {
+        $options = [];
+        $config = $this->amqpConfig->getConfig();
+        $map = ['host', 'port', 'user', 'password', 'virtualhost'];
+
+        if (!empty($config['amqp']['host'])) {
+            foreach ($map as $option) {
+                if (!empty($config['amqp'][$option])) {
+                    $options['--amqp-' . $option] = (string)$config['amqp'][$option];
+                }
+            }
+        }
+
+        return $options;
     }
 }

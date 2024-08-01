@@ -64,7 +64,7 @@ class ReportDirNestingLevelTest extends TestCase
     /**
      * @inheritdoc
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->environmentMock = $this->createMock(Environment::class);
         $this->configFileListMock = $this->createMock(ConfigFileList::class);
@@ -93,6 +93,13 @@ class ReportDirNestingLevelTest extends TestCase
         $this->environmentMock->expects($this->once())
             ->method('getEnvVarMageErrorReportDirNestingLevel')
             ->willReturn($someValue);
+        $this->fileMock->expects($this->once())
+            ->method('fileGetContents')
+            ->willReturn('valid xml');
+        $this->encoderMock->expects($this->once())
+            ->method('decode')
+            ->with('valid xml')
+            ->willReturn(['report' => ['dir_nesting_level' => $someValue]]);
 
         $this->assertInstanceOf(Success::class, $this->validator->validate());
     }

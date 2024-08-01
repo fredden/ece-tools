@@ -9,8 +9,8 @@ namespace Magento\MagentoCloud\Test\Unit\Config;
 
 use Magento\MagentoCloud\Config\AdminData;
 use Magento\MagentoCloud\Config\EnvironmentDataInterface;
-use PHPStan\Testing\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @inheritDoc
@@ -30,7 +30,7 @@ class AdminDataTest extends TestCase
     /**
      * @inheritDoc
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->environmentDataMock = $this->getMockForAbstractClass(EnvironmentDataInterface::class);
 

@@ -24,7 +24,7 @@ class MessageFormatterTest extends TestCase
     /**
      * @inheritdoc
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->messageFormatter = new MessageFormatter();
     }
@@ -40,12 +40,14 @@ class MessageFormatterTest extends TestCase
             'datetime' => new \DateTime(),
             'level' => Logger::INFO,
             'extra' => [],
-            'context' => []
+            'context' => [],
+            'channel' => 'some_channel'
         ]);
 
         $this->assertEquals(
             [
-                'some_key' => 'some_value'
+                'some_key' => 'some_value',
+                'facility' => 'some_channel'
             ],
             $message->getAllAdditionals()
         );

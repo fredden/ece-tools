@@ -17,6 +17,8 @@ use Magento\MagentoCloud\DB\Data\ConnectionFactory;
 use Magento\MagentoCloud\DB\Data\ConnectionInterface;
 use Magento\MagentoCloud\Package\MagentoVersion;
 use Magento\MagentoCloud\Service\ElasticSearch;
+use Magento\MagentoCloud\Service\OpenSearch;
+use Magento\MagentoCloud\Config\Amqp as AmqpConfig;
 use Magento\MagentoCloud\Step\Deploy\InstallUpdate\Install\Setup\InstallCommandFactory;
 use Magento\MagentoCloud\Util\PasswordGenerator;
 use Magento\MagentoCloud\Util\UrlManager;
@@ -81,9 +83,19 @@ class InstallCommandFactoryTest extends TestCase
     private $elasticSearchMock;
 
     /**
+     * @var OpenSearch|MockObject
+     */
+    private $openSearchMock;
+
+    /**
      * @var RemoteStorage|MockObject
      */
     private $remoteStorageMock;
+
+    /**
+     * @var AmqpConfig|MockObject
+     */
+    private $amqpConfigMock;
 
     /**
      * @inheritdoc
@@ -104,7 +116,9 @@ class InstallCommandFactoryTest extends TestCase
         $this->dbConfigMock = $this->createMock(DbConfig::class);
         $this->magentoVersionMock = $this->createMock(MagentoVersion::class);
         $this->elasticSearchMock = $this->createMock(ElasticSearch::class);
+        $this->openSearchMock = $this->createMock(OpenSearch::class);
         $this->remoteStorageMock = $this->createMock(RemoteStorage::class);
+        $this->amqpConfigMock = $this->createMock(AmqpConfig::class);
 
         $this->installCommandFactory = new InstallCommandFactory(
             $this->urlManagerMock,
@@ -116,7 +130,9 @@ class InstallCommandFactoryTest extends TestCase
             $this->dbConfigMock,
             $this->magentoVersionMock,
             $this->elasticSearchMock,
-            $this->remoteStorageMock
+            $this->openSearchMock,
+            $this->remoteStorageMock,
+            $this->amqpConfigMock
         );
     }
 
@@ -351,7 +367,7 @@ class InstallCommandFactoryTest extends TestCase
                 'region' => 'someRegion'
             ]);
 
-        self::assertContains(
+        self::assertStringContainsString(
             "--remote-storage-prefix='somePrefix' --remote-storage-bucket='someBucket'"
             . " --remote-storage-region='someRegion'",
             $this->installCommandFactory->create()
@@ -381,7 +397,7 @@ class InstallCommandFactoryTest extends TestCase
                 'secret' => 'someSecret'
             ]);
 
-        self::assertContains(
+        self::assertStringContainsString(
             "--remote-storage-prefix='somePrefix' --remote-storage-bucket='someBucket'"
             . " --remote-storage-region='someRegion'"
             . " --remote-storage-key='someKey' --remote-storage-secret='someSecret'",
@@ -428,8 +444,8 @@ class InstallCommandFactoryTest extends TestCase
             ->method('isAuthEnabled')
             ->willReturn(true);
         $this->elasticSearchMock->expects($this->once())
-            ->method('getFullVersion')
-            ->willReturn('7.7');
+            ->method('getFullEngineName')
+            ->willReturn('elasticsearch7');
         $this->elasticSearchMock->expects($this->once())
             ->method('getHost')
             ->willReturn('127.0.0.1');
@@ -448,10 +464,227 @@ class InstallCommandFactoryTest extends TestCase
                 ]
             ]);
 
+        $this->openSearchMock->expects($this->once())
+            ->method('isInstalled')
+            ->willReturn(false);
+        $this->openSearchMock->expects($this->never())
+            ->method('isAuthEnabled');
+        $this->openSearchMock->expects($this->never())
+            ->method('getFullEngineName');
+        $this->openSearchMock->expects($this->never())
+            ->method('getHost');
+        $this->openSearchMock->expects($this->never())
+            ->method('getPort');
+        $this->openSearchMock->expects($this->never())
+            ->method('getConfiguration');
+
         $command = $this->installCommandFactory->create();
-        self::assertContains("--elasticsearch-enable-auth='1'", $command);
-        self::assertContains("--elasticsearch-username='user'", $command);
-        self::assertContains("--elasticsearch-password='secret'", $command);
-        self::assertContains("--elasticsearch-index-prefix='test'", $command);
+        self::assertStringContainsString("--search-engine='elasticsearch7'", $command);
+        self::assertStringContainsString("--elasticsearch-enable-auth='1'", $command);
+        self::assertStringContainsString("--elasticsearch-username='user'", $command);
+        self::assertStringContainsString("--elasticsearch-password='secret'", $command);
+        self::assertStringContainsString("--elasticsearch-index-prefix='test'", $command);
+    }
+
+    /**
+     * @param bool $greaterOrEqual
+     * @param string $enginePrefixName
+     * @throws ConfigException
+     * @dataProvider executeWithOSauthOptionsDataProvider
+     */
+    public function testExecuteWithOSauthOptions(
+        bool $greaterOrEqual,
+        string $enginePrefixName
+    ): void {
+        $this->mockBaseConfig('', '', '', '', '', '');
+        $this->magentoVersionMock->method('isGreaterOrEqual')
+            ->willReturnMap([
+                ['2.4.0', true],
+                ['2.4.2', true],
+                ['2.4.4', true],
+                ['2.4.6', $greaterOrEqual],
+            ]);
+        $this->magentoVersionMock->expects($this->once())
+            ->method('satisfies')
+            ->with('>=2.3.7-p3 <2.4.0 || >=2.4.3-p2')
+            ->willReturn(true);
+        $this->openSearchMock->expects($this->once())
+            ->method('isInstalled')
+            ->willReturn(true);
+        $this->openSearchMock->expects($this->once())
+            ->method('isAuthEnabled')
+            ->willReturn(true);
+        $this->openSearchMock->expects($this->once())
+            ->method('getFullEngineName')
+            ->willReturn('opensearch1');
+        $this->openSearchMock->expects($this->once())
+            ->method('getHost')
+            ->willReturn('127.0.0.1');
+        $this->openSearchMock->expects($this->once())
+            ->method('getPort')
+            ->willReturn('1234');
+        $this->openSearchMock->expects($this->once())
+            ->method('getConfiguration')
+            ->willReturn([
+                'host' => '127.0.0.1',
+                'port' => '1234',
+                'username' => 'user',
+                'password' => 'secret',
+                'query' => [
+                    'index' => 'test'
+                ]
+            ]);
+
+        $this->elasticSearchMock->expects($this->once())
+            ->method('isInstalled')
+            ->willReturn(true);
+        $this->elasticSearchMock->expects($this->never())
+            ->method('isAuthEnabled');
+        $this->elasticSearchMock->expects($this->never())
+            ->method('getFullEngineName');
+        $this->elasticSearchMock->expects($this->never())
+            ->method('getHost');
+        $this->elasticSearchMock->expects($this->never())
+            ->method('getPort');
+        $this->elasticSearchMock->expects($this->never())
+            ->method('getConfiguration');
+
+        $command = $this->installCommandFactory->create();
+        self::assertStringContainsString("--search-engine='opensearch1'", $command);
+        self::assertStringContainsString("--" . $enginePrefixName . "-enable-auth='1'", $command);
+        self::assertStringContainsString("--" . $enginePrefixName . "-username='user'", $command);
+        self::assertStringContainsString("--" . $enginePrefixName . "-password='secret'", $command);
+        self::assertStringContainsString("--" . $enginePrefixName . "-index-prefix='test'", $command);
+    }
+
+    /**
+     * @return array
+     */
+    public function executeWithOSauthOptionsDataProvider()
+    {
+        return [
+            [false, 'elasticsearch'],
+            [true, 'opensearch'],
+        ];
+    }
+
+    /**
+     * @param array $amqpConfig
+     * @param string $expectedResult
+     * @return void
+     * @throws ConfigException
+     *
+     * @dataProvider executeWithAmqpConfigOptionsDataProvider
+     */
+    public function testExecuteWithAmqpConfigOptions(
+        array $amqpConfig,
+        string $expectedResult
+    ): void {
+        $this->mockBaseConfig('', '', '', '', '', '');
+        $this->magentoVersionMock->method('isGreaterOrEqual')
+            ->willReturnMap([
+                ['2.4.0', false],
+                ['2.4.2', true]
+            ]);
+        $this->amqpConfigMock->method('getConfig')
+            ->willReturn($amqpConfig);
+
+        self::assertStringContainsString($expectedResult, $this->installCommandFactory->create());
+    }
+
+    /**
+     * @return array
+     */
+    public function executeWithAmqpConfigOptionsDataProvider(): array
+    {
+        return [
+            'with all parameters and other config' => [
+                'amqpConfig' => [
+                    'amqp' => [
+                        'host' => 'some_host',
+                        'port' => 'some_port',
+                        'user' => 'some_user',
+                        'password' => 'some_password',
+                        'virtualhost' => 'some_host',
+                        'some_config' => 'some_config'
+                    ],
+                    'some_config' => 'some_value',
+                ],
+                'expectedResult' => "--amqp-host='some_host' --amqp-port='some_port' --amqp-user='some_user'"
+                    . " --amqp-password='some_password' --amqp-virtualhost='some_host'",
+            ],
+            'only host' => [
+                'amqpConfig' => [
+                    'amqp' => [
+                        'host' => 'some_host',
+                        'user' => 'some_user',
+                        'password' => 'some_password',
+                        'virtualhost' => 'some_host',
+                        'some_config' => 'some_config'
+                    ],
+                    'some_config' => 'some_value',
+                ],
+                'expectedResult' => "--amqp-host='some_host'",
+            ],
+        ];
+    }
+
+    /**
+     * @param array $amqpConfig
+     * @return void
+     * @throws ConfigException
+     *
+     * @dataProvider executeWithAmqpConfigOptionsWithoutHostDataProvider
+     */
+    public function testExecuteWithAmqpConfigOptionsWithoutHost(array $amqpConfig): void
+    {
+        $this->mockBaseConfig('', '', '', '', '', '');
+        $this->magentoVersionMock->method('isGreaterOrEqual')
+            ->willReturnMap([
+                ['2.4.0', false],
+                ['2.4.2', true]
+            ]);
+        $this->amqpConfigMock->method('getConfig')
+            ->willReturn($amqpConfig);
+
+        $command = $this->installCommandFactory->create();
+        self::assertStringNotContainsString('--amqp-host', $command);
+        self::assertStringNotContainsString('--amqp-port', $command);
+        self::assertStringNotContainsString('--amqp-user', $command);
+        self::assertStringNotContainsString('--amqp-password', $command);
+        self::assertStringNotContainsString('--amqp-virtualhost', $command);
+    }
+
+    /**
+     * @return array
+     */
+    public function executeWithAmqpConfigOptionsWithoutHostDataProvider(): array
+    {
+        return [
+            'host is not set' => [
+                'amqpConfig' => [
+                    'amqp' => [
+                        'port' => 'some_port',
+                        'user' => 'some_user',
+                        'password' => 'some_password',
+                        'virtualhost' => 'some_host',
+                        'some_config' => 'some_config'
+                    ],
+                    'some_config' => 'some_value',
+                ],
+            ],
+            'host is empty' => [
+                'amqpConfig' => [
+                    'amqp' => [
+                        'host' => '',
+                        'user' => 'some_user',
+                        'password' => 'some_password',
+                        'virtualhost' => 'some_host',
+                        'some_config' => 'some_config'
+                    ],
+                    'some_config' => 'some_value',
+                ],
+            ],
+        ];
     }
 }

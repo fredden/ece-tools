@@ -12,10 +12,15 @@ use CliTester;
 /**
  * This test runs on the latest version of PHP
  *
- * @group php74
+ * @group php83
  */
 class ErrorMessageCest extends AbstractCest
 {
+    /**
+     * @var string
+     */
+    protected $magentoCloudTemplate = '2.4.7-beta-test';
+
     /**
      * @param CliTester $I
      * @throws \Robo\Exception\TaskException

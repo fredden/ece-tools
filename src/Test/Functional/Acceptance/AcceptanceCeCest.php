@@ -14,11 +14,16 @@ use CliTester;
 /**
  * @inheritDoc
  *
- * @group php74
+ * @group php82
  * @group edition-ce
  */
 class AcceptanceCeCest extends AbstractCest
 {
+    /**
+     * @var string
+     */
+    protected $magentoCloudTemplate = '2.4.6';
+
     /**
      * @var boolean
      */
@@ -40,6 +45,7 @@ class AcceptanceCeCest extends AbstractCest
      * @param CliTester $I
      *
      * @throws TaskException
+     * @skip Magento CE does not work on the Cloud and MCD
      */
     public function testWithSplitBuildCommand(\CliTester $I): void
     {

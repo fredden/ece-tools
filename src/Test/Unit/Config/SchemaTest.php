@@ -47,7 +47,7 @@ class SchemaTest extends TestCase
     /**
      * @inheritdoc
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->systemListMock = $this->createMock(SystemList::class);
         $this->parserMock = $this->createTestProxy(Parser::class);
@@ -118,6 +118,8 @@ class SchemaTest extends TestCase
                 DeployInterface::VAR_CACHE_REDIS_BACKEND => 'Cm_Cache_Backend_Redis',
                 DeployInterface::VAR_REMOTE_STORAGE => [],
                 DeployInterface::VAR_SCD_NO_PARENT => false,
+                DeployInterface::VAR_USE_LUA => false,
+                DeployInterface::VAR_LUA_KEY => true,
             ],
             $this->schema->getDefaults(StageConfigInterface::STAGE_DEPLOY)
         );
@@ -174,6 +176,8 @@ class SchemaTest extends TestCase
                 StageConfigInterface::VAR_DEPLOY_FROM_GIT_OPTIONS => [],
                 StageConfigInterface::VAR_MIN_LOGGING_LEVEL => '',
                 StageConfigInterface::VAR_X_FRAME_CONFIGURATION => 'SAMEORIGIN',
+                StageConfigInterface::VAR_ENABLE_EVENTING => false,
+                StageConfigInterface::VAR_ENABLE_WEBHOOKS => false,
             ],
             $this->schema->getDefaults(StageConfigInterface::STAGE_GLOBAL)
         );
